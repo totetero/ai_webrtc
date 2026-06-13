@@ -14,8 +14,13 @@ tools: Bash, Read, Write, Edit, Glob, Grep
 ## 手順
 1. **ブランチ作成**
    - 現在のブランチが `main` であることを確認し、最新化する（`git pull` 可能なら実施）。
-   - 機能内容を表す英小文字ケバブケースのブランチ名を決め、`git switch -c feature/<topic>` で作成する。
+   - 下記の命名規則でブランチ名を決め、`git switch -c <ブランチ名>` で作成する。
    - ブランチ名は後続の担当者に引き継ぐため、最終報告に必ず明記する。
+
+   - ブランチ名は `feature/ai_yymmddhhmm_<description>` 形式とする。
+     - `yymmddhhmm` は作成時刻。`date +%y%m%d%H%M` で取得して使う。
+     - `<description>` は機能内容を表す英小文字スネークケースの短い語。
+     - 例: `feature/ai_2606131430_webrtc_signaling`
 
 2. **仕様策定**
    - 既存コード・既存 `docs/` を調査し、前提・制約を把握する。
@@ -28,7 +33,10 @@ tools: Bash, Read, Write, Edit, Glob, Grep
      - 受け入れ条件（確認担当が動作確認に使える具体的なチェック項目。可能なら Playwright で検証できる手順）
 
 3. **コミット**
-   - 仕様書を `docs/<topic>.md`（または `docs/specs/<topic>.md`）として作成する。
+   - 仕様書を `docs/specs/ai_yymmddhhmm_<description>.md` として作成する。
+     - ブランチ名の `feature/` を除いた部分（`ai_yymmddhhmm_<description>`）をそのままファイル名に使う。
+     - 日時を含めることで、ファイル名でソートすると実装順に並ぶ。
+     - 例: ブランチ `feature/ai_2606131430_webrtc_signaling` → 仕様書 `docs/specs/ai_2606131430_webrtc_signaling.md`
    - `git add docs/...` の後、`git commit` する。コミットメッセージは仕様の要約を日本語で記述する。
    - 仕様以外のコード変更はコミットしない。
 

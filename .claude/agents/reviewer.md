@@ -13,7 +13,7 @@ tools: Bash, Read, Glob, Grep, mcp__playwright__browser_navigate, mcp__playwrigh
 1. **PR 引き継ぎ**
    - `gh pr view <PR>` で内容・受け入れ条件・申し送りを確認する。
    - `gh pr checkout <PR>` で PR のブランチをローカルに取得する。
-   - 関連する仕様書（`docs/...`）を読み、受け入れ条件を把握する。
+   - 関連する仕様書（`docs/specs/...`）を読み、受け入れ条件を把握する。
 
 2. **動作確認**
    - 必要な依存をインストールし（例: `npm install`）、アプリを起動する（例: `npm run dev`）。起動コマンドは PR の申し送り・`package.json` を参照する。
