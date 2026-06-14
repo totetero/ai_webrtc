@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { getScannerStream, scanQrFromVideo } from '../qr'
+import { FrameCollector } from '../signaling'
 
 interface QRScannerProps {
   title: string
@@ -23,11 +24,21 @@ export function QRScanner({ title, caption, onPayload, hint, debug }: QRScannerP
 
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [pasteValue, setPasteValue] = useState('')
+  const [progress, setProgress] = useState<{ received: number; total: number } | null>(null)
+
+  // フレームを自動収集するコレクタ。コンポーネントで 1 つだけ保持する。
+  const collectorRef = useRef<FrameCollector | null>(null)
+  if (collectorRef.current === null) {
+    collectorRef.current = new FrameCollector()
+  }
+  // 全フレーム完成時に onPayload を 1 回だけ呼ぶための重複防止ガード。
+  const completedRef = useRef(false)
 
   useEffect(() => {
     let stream: MediaStream | null = null
     let rafId = 0
     let stopped = false
+    const collector = collectorRef.current!
 
     const tick = () => {
       if (stopped) return
@@ -35,8 +46,16 @@ export function QRScanner({ title, caption, onPayload, hint, debug }: QRScannerP
       const canvas = canvasRef.current
       if (video && canvas && video.readyState >= video.HAVE_CURRENT_DATA) {
         const data = scanQrFromVideo(video, canvas)
-        if (data) {
-          onPayloadRef.current(data)
+        if (data && !completedRef.current) {
+          collector.add(data)
+          setProgress(collector.progress)
+          if (collector.isComplete()) {
+            const result = collector.result()
+            if (result) {
+              completedRef.current = true
+              onPayloadRef.current(result)
+            }
+          }
         }
       }
       rafId = requestAnimationFrame(tick)
@@ -100,6 +119,11 @@ export function QRScanner({ title, caption, onPayload, hint, debug }: QRScannerP
         />
       </div>
       <canvas ref={canvasRef} className="scanner-canvas" hidden />
+      {progress ? (
+        <p className="hint" data-testid="scan-progress">
+          {progress.received}/{progress.total} 読取済み
+        </p>
+      ) : null}
       {cameraError ? <p className="hint">{cameraError}</p> : null}
       {hint ? <p className="error">{hint}</p> : null}
       {debug ? (

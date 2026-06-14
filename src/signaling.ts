@@ -109,3 +109,169 @@ export function decode(payload: string): DecodedSignal {
   }
   return { type, sdp }
 }
+
+// ---------------------------------------------------------------------------
+// フレーム層
+//
+// encode() が返すフル文字列を複数の QR フレームに分割し、読取側で自動収集して
+// 元のフル文字列へ復元するための層。既存の encode/decode/minifySdp は不変。
+//
+// フレーム形式: `${sid}.${idx}.${total}.${body}`
+//   - sid:   生成ごとのセッションID（4 文字 [a-z0-9]）
+//   - idx:   フレーム番号（1 始まり）
+//   - total: フレーム総数
+//   - body:  フル文字列の一部（base64url 文字のみ。`.` を含まない）
+// ---------------------------------------------------------------------------
+
+/** 1 フレームの body 最大文字数（QR 密度の上限）。実機検証後に調整可能。 */
+export const MAX_FRAME_BODY = 180
+
+const SID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
+const SID_LENGTH = 4
+
+/** 4 文字のセッションID（crypto 由来、[a-z0-9]）を生成する。 */
+export function newSessionId(): string {
+  const bytes = new Uint8Array(SID_LENGTH)
+  crypto.getRandomValues(bytes)
+  let sid = ''
+  for (let i = 0; i < SID_LENGTH; i++) {
+    sid += SID_ALPHABET[bytes[i] % SID_ALPHABET.length]
+  }
+  return sid
+}
+
+/**
+ * フル文字列を maxBody 以内に分割し、フレーム文字列配列を返す。
+ * - フレーム数 = ceil(payload.length / maxBody)。各 body 長はなるべく均等に分配する。
+ * - 空文字列は不正入力として例外を投げる。
+ */
+export function buildFrames(
+  payload: string,
+  sid: string,
+  maxBody: number = MAX_FRAME_BODY,
+): string[] {
+  if (!payload) {
+    throw new Error('buildFrames: empty payload')
+  }
+  const total = Math.ceil(payload.length / maxBody)
+  // body 長をなるべく均等に分配する（差は高々 1 文字）。
+  const base = Math.floor(payload.length / total)
+  const remainder = payload.length % total
+  const frames: string[] = []
+  let offset = 0
+  for (let i = 0; i < total; i++) {
+    const size = base + (i < remainder ? 1 : 0)
+    const body = payload.slice(offset, offset + size)
+    offset += size
+    frames.push(`${sid}.${i + 1}.${total}.${body}`)
+  }
+  return frames
+}
+
+export interface ParsedFrame {
+  sid: string
+  idx: number
+  total: number
+  body: string
+}
+
+/**
+ * フレーム文字列をパースする。書式・数値妥当性を検証し、不正なら null。
+ * 先頭から 3 つの `.` までを sid / idx / total とし、残り全体を body とする。
+ */
+export function parseFrame(s: string): ParsedFrame | null {
+  if (!s) {
+    return null
+  }
+  const first = s.indexOf('.')
+  if (first <= 0) {
+    return null
+  }
+  const second = s.indexOf('.', first + 1)
+  if (second < 0) {
+    return null
+  }
+  const third = s.indexOf('.', second + 1)
+  if (third < 0) {
+    return null
+  }
+  const sid = s.slice(0, first)
+  const idxStr = s.slice(first + 1, second)
+  const totalStr = s.slice(second + 1, third)
+  const body = s.slice(third + 1)
+  if (!sid || !body) {
+    return null
+  }
+  if (!/^\d+$/.test(idxStr) || !/^\d+$/.test(totalStr)) {
+    return null
+  }
+  const idx = Number(idxStr)
+  const total = Number(totalStr)
+  if (total < 1 || idx < 1 || idx > total) {
+    return null
+  }
+  return { sid, idx, total, body }
+}
+
+/**
+ * 複数フレームを自動収集し、そろったら元のフル文字列へ復元するコレクタ。
+ * - 不正フレームは無視。
+ * - 収集中と異なる sid のフレームが来たらリセットして新しい sid を採用する。
+ * - 同一 idx の重複投入は冪等（上書き）。
+ */
+export class FrameCollector {
+  private sid: string | null = null
+  private total = 0
+  private bodies = new Map<number, string>()
+
+  add(frame: string): void {
+    const parsed = parseFrame(frame)
+    if (!parsed) {
+      return
+    }
+    if (this.sid !== parsed.sid) {
+      // 新しい sid（初回 or 別 sid）に切り替えてリセットする。
+      this.sid = parsed.sid
+      this.total = parsed.total
+      this.bodies = new Map()
+    }
+    // 同一 idx は上書き（冪等）。
+    this.bodies.set(parsed.idx, parsed.body)
+  }
+
+  get progress(): { received: number; total: number } | null {
+    if (this.sid === null) {
+      return null
+    }
+    return { received: this.bodies.size, total: this.total }
+  }
+
+  isComplete(): boolean {
+    if (this.sid === null || this.total < 1) {
+      return false
+    }
+    for (let i = 1; i <= this.total; i++) {
+      if (!this.bodies.has(i)) {
+        return false
+      }
+    }
+    return true
+  }
+
+  result(): string | null {
+    if (!this.isComplete()) {
+      return null
+    }
+    let out = ''
+    for (let i = 1; i <= this.total; i++) {
+      out += this.bodies.get(i)!
+    }
+    return out
+  }
+
+  reset(): void {
+    this.sid = null
+    this.total = 0
+    this.bodies = new Map()
+  }
+}
