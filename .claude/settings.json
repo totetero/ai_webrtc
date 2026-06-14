@@ -14,5 +14,19 @@
   },
   "enabledPlugins": {
     "superpowers@superpowers-dev": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // \"\"'); if printf '%s' \"$cmd\" | grep -qE 'git[[:space:]].*commit' && [ \"$(git rev-parse --abbrev-ref HEAD 2>/dev/null)\" = \"main\" ]; then printf '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"mainブランチへのAIによるコミットは禁止です。作業ブランチを作成してからコミットしてください。\"}}'; fi",
+            "statusMessage": "mainブランチへのコミットを確認中..."
+          }
+        ]
+      }
+    ]
   }
 }
