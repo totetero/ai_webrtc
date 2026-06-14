@@ -2,6 +2,8 @@
   "name": "ai_webrtc",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
   "runArgs": ["--env-file", ".env"],
+  "//appPort": "vite dev(5173) をホストの 0.0.0.0 に公開し、同一LANのスマホ等からアクセスできるようにする。変更後はコンテナの Rebuild が必要。",
+  "appPort": ["5173:5173"],
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
