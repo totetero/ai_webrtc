@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Git worktrees（サブエージェント開発フローの隔離ワークスペース）
+.worktrees/
+
 # Playwright
 test-results
 playwright-report

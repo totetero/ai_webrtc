@@ -12,20 +12,27 @@ tools: Bash, Read, Write, Edit, Glob, Grep, Skill
 - `superpowers:writing-plans` — 要件を実装可能な多段ステップに分解して仕様書へ落とし込む。
 
 ## 責務
-1. 作業用のブランチを作成する。
+1. 作業用のブランチと、それを隔離する git worktree を作成する。
 2. 要望を整理し、実装可能なレベルの仕様書を作成する。
-3. 仕様書を `docs/` 以下にコミットする。
+3. worktree 内で仕様書を `docs/` 以下にコミットする。
 
 ## 手順
-1. **ブランチ作成**
-   - 現在のブランチが `main` であることを確認し、最新化する（`git pull` 可能なら実施）。
-   - 下記の命名規則でブランチ名を決め、`git switch -c <ブランチ名>` で作成する。
-   - ブランチ名は後続の担当者に引き継ぐため、最終報告に必ず明記する。
-
-   - ブランチ名は `feature/ai_yymmddhhmm_<description>` 形式とする。
-     - `yymmddhhmm` は作成時刻。`date +%y%m%d%H%M` で取得して使う。
-     - `<description>` は機能内容を表す英小文字スネークケースの短い語。
-     - 例: `feature/ai_2606131430_webrtc_signaling`
+1. **ブランチ + worktree 作成**
+   - メインのチェックアウト（リポジトリ root）が `main` であることを確認し、最新化する（`git pull` 可能なら実施）。
+   - 下記の命名規則でブランチ名を決める。
+     - ブランチ名は `feature/ai_yymmddhhmm_<description>` 形式とする。
+       - `yymmddhhmm` は作成時刻。`date +%y%m%d%H%M` で取得して使う。
+       - `<description>` は機能内容を表す英小文字スネークケースの短い語。
+       - 例: `feature/ai_2606131430_webrtc_signaling`
+   - **`git switch -c` ではなく worktree でブランチを切る。** メインのチェックアウトは `main` のまま汚さず、隔離されたディレクトリで作業する。
+     - worktree のパスは `.worktrees/<leaf>` とする。`<leaf>` はブランチ名から `feature/` を除いた部分（例: `ai_2606131430_webrtc_signaling`）。
+     - `.worktrees/` は `.gitignore` 済み。念のため `git check-ignore -q .worktrees` で無視されていることを確認する。無視されていなければ `.gitignore` に `.worktrees/` を追記して `main` にコミットしてから進む。
+     - リポジトリ root で次を実行してブランチと worktree を同時に作成する:
+       ```bash
+       git worktree add .worktrees/<leaf> -b feature/ai_yymmddhhmm_<description>
+       ```
+     - 以降の作業はすべて `cd .worktrees/<leaf>` した worktree 内で行う。
+   - ブランチ名と **worktree のパス** は後続の担当者に引き継ぐため、最終報告に必ず明記する。
 
 2. **仕様策定**
    - まず `superpowers:brainstorming` を呼び、要望の意図・要件・設計方針を掘り下げる。要件を多段に分解する段では `superpowers:writing-plans` を活用する。
@@ -38,7 +45,7 @@ tools: Bash, Read, Write, Edit, Glob, Grep, Skill
      - 影響範囲（対象ファイル・モジュールの当たり）
      - 受け入れ条件（確認担当が動作確認に使える具体的なチェック項目。可能なら Playwright で検証できる手順）
 
-3. **コミット**
+3. **コミット**（worktree 内で実施）
    - 仕様書を `docs/specs/ai_yymmddhhmm_<description>.md` として作成する。
      - ブランチ名の `feature/` を除いた部分（`ai_yymmddhhmm_<description>`）をそのままファイル名に使う。
      - 日時を含めることで、ファイル名でソートすると実装順に並ぶ。
@@ -52,6 +59,7 @@ tools: Bash, Read, Write, Edit, Glob, Grep, Skill
 
 ## 最終報告に必ず含めること
 - 作成したブランチ名
+- **作成した worktree のパス**（`.worktrees/<leaf>`）
 - 仕様書のパス
 - コミットハッシュ
 - 受け入れ条件の要約

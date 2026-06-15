@@ -13,16 +13,19 @@ tools: Bash, Read, Glob, Grep, Skill, mcp__playwright__browser_navigate, mcp__pl
 - `superpowers:requesting-code-review` — 受け入れ条件を満たしているかを構造的に検証するためのチェック観点として使う。
 
 ## 前提（引き継ぎ情報）
-呼び出し時に「PR の番号または URL」が渡されます。渡されていない場合は `gh pr list` で対象を特定し、特定根拠を最終報告に記す。
+呼び出し時に「PR の番号または URL」（と可能なら「worktree のパス」）が渡されます。PR が渡されていない場合は `gh pr list` で対象を特定し、特定根拠を最終報告に記す。
 
 ## 手順
 1. **PR 引き継ぎ**
    - `gh pr view <PR>` で内容・受け入れ条件・申し送りを確認する。
-   - `gh pr checkout <PR>` で PR のブランチをローカルに取得する。
+   - **PR のブランチは既に worktree（`.worktrees/<leaf>`）にチェックアウト済み。** `gh pr checkout` は使わない（ブランチが worktree に取られていて root では衝突する）。代わりに対象 worktree に `cd` する。
+     - worktree のパスが渡されていればそれを使う。無ければ `git worktree list` で PR のブランチ（`gh pr view <PR> --json headRefName -q .headRefName`）に対応する worktree を特定する。
+     - 見つからなければリポジトリ root で `git worktree add .worktrees/<leaf> <ブランチ名>` を作成して使う（その旨を最終報告に記す）。
+   - worktree 内で `git pull`（または `git fetch && git reset --hard @{u}`）して PR の最新コミットに同期する。
    - 関連する仕様書（`docs/specs/...`）を読み、受け入れ条件を把握する。
 
-2. **動作確認**
-   - 必要な依存をインストールし（例: `npm install`）、アプリを起動する（例: `npm run dev`）。起動コマンドは PR の申し送り・`package.json` を参照する。
+2. **動作確認**（worktree 内で実施）
+   - 必要な依存をインストールし（worktree ごとに `node_modules` は独立。例: `npm install`）、アプリを起動する（例: `npm run dev`）。起動コマンドは PR の申し送り・`package.json` を参照する。
    - **Playwright を使ってブラウザ上の挙動を確認する**：
      - `mcp__playwright__browser_navigate` で起動した URL を開く。
      - `mcp__playwright__browser_snapshot` で画面状態を取得し、受け入れ条件に沿って操作（クリック・入力・フォーム送信など）する。

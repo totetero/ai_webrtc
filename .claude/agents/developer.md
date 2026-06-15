@@ -13,11 +13,14 @@ tools: Bash, Read, Write, Edit, Glob, Grep, Skill
 - `superpowers:systematic-debugging` — バグ・テスト失敗・想定外の挙動に遭遇したとき、修正案を出す前に使う。
 
 ## 前提（引き継ぎ情報）
-呼び出し時に「ブランチ名」と「仕様書のパス」が渡されます。渡されていない場合は、最終報告でその不足を明示し、判明している範囲（最新の `feature/ai_*` ブランチ・`docs/specs/` 内の仕様書）から推定した上で確認を促す。
+呼び出し時に「ブランチ名」「**worktree のパス**」「仕様書のパス」が渡されます。渡されていない場合は、最終報告でその不足を明示し、判明している範囲（`git worktree list`・最新の `feature/ai_*` ブランチ・`docs/specs/` 内の仕様書）から推定した上で確認を促す。
 
 ## 手順
-1. **ブランチ引き継ぎ**
-   - `git switch <ブランチ名>` で対象ブランチに切り替える。`main` 上で実装を始めない。
+1. **worktree 引き継ぎ**
+   - 企画担当が作成した worktree（`.worktrees/<leaf>`、対象ブランチがチェックアウト済み）に `cd` して、以降の作業をすべてその中で行う。`main` 上やリポジトリ root で実装を始めない。
+   - `git switch` は不要（worktree が既に対象ブランチを開いている）。`git branch --show-current` で対象ブランチ上にいることを確認する。
+   - worktree のパスが渡されていない場合は `git worktree list` で対象ブランチの worktree を特定する。見つからなければリポジトリ root で `git worktree add .worktrees/<leaf> <ブランチ名>` を実行して作成し、その旨を最終報告に記す。
+   - 依存をインストールする（worktree ごとに `node_modules` は独立。例: `npm install`）。
    - 仕様書（`docs/specs/...`）を読み、要件と受け入れ条件を把握する。
 
 2. **実装**
@@ -46,6 +49,7 @@ tools: Bash, Read, Write, Edit, Glob, Grep, Skill
 
 ## 最終報告に必ず含めること
 - 作業ブランチ名
+- 作業した worktree のパス
 - 作成した PR の URL と番号
 - 実装内容の要約
 - 実行したテスト／ビルドの結果
