@@ -10,6 +10,12 @@
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* 終了/危険操作の強調色（hangup ボタン）。NFR-3: 新規色も変数化する。 */
+  --danger: #e5484d;
+  --danger-hover: #d13639;
+  --danger-text: #fff;
+  /* error テキストの警告色（FR-8/FR-9）。 */
+  --error: #d4313a;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -43,19 +49,17 @@
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+    --danger: #f2555a;
+    --danger-hover: #e5484d;
+    --danger-text: #fff;
+    --error: #ff6166;
   }
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
+  /* モバイル縦前提（FR-2/NFR-4）。固定幅をやめ画面幅いっぱい・縦フレックスにする。
+     コンテンツの最大幅は app-root 側で制御する。 */
+  width: 100%;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
@@ -74,29 +78,26 @@ h2 {
 }
 
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+  /* モバイル縦の見出し（FR-2）。ランディング用の 56px を実用サイズへ。 */
+  font-size: 26px;
+  letter-spacing: -0.5px;
+  margin: 0 0 12px;
+  @media (max-width: 360px) {
+    font-size: 24px;
   }
 }
 h2 {
-  font-size: 24px;
-  line-height: 118%;
+  /* 各フェーズのタイトル（FR-2）。 */
+  font-size: 20px;
+  line-height: 130%;
   letter-spacing: -0.24px;
   margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
 }
 p {
   margin: 0;
 }
 
-code,
-.counter {
+code {
   font-family: var(--mono);
   display: inline-flex;
   border-radius: 4px;
