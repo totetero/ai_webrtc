@@ -13,20 +13,23 @@ interface QRDisplayProps {
 /** 表示フレームの循環間隔（ミリ秒）。実機調整可能な定数。 */
 const CYCLE_INTERVAL_MS = 700
 
-/** 確定 SDP のペイロードを複数 QR フレームに分割し、自動循環表示する（FR-15）。 */
-export function QRDisplay({ payload, title, caption, debug }: QRDisplayProps) {
-  // フレームごとの dataURL を初回にまとめて生成して保持する。
+/**
+ * 1 つの payload に対するフレーム生成・循環表示を担う内部コンポーネント。
+ * payload が変わると親が key を切り替えて本コンポーネントを作り直すため、
+ * dataUrls / error / current は初期 state へ自然にリセットされる。
+ * これにより「payload 変更時に effect 本体で同期 setState する」必要がなくなり、
+ * react-hooks/set-state-in-effect を根本解消する（前回の QR・カウンタ・エラーも残らない）。
+ */
+function QRFrames({ payload }: { payload: string }) {
+  // フレームごとの dataURL を初回（=この payload 用のマウント時）にまとめて生成して保持する。
   const [dataUrls, setDataUrls] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [current, setCurrent] = useState(0)
-  const [copied, setCopied] = useState(false)
 
-  // payload が変わったときのみフレームを生成し、全フレームの dataURL をまとめて作る。
+  // この payload 用のフレームを 1 回だけ生成し、全フレームの dataURL をまとめて作る。
+  // key リセットによりマウントは payload ごとに 1 回なので、生成も payload ごとに 1 回。
   useEffect(() => {
     let cancelled = false
-    setDataUrls([])
-    setError(null)
-    setCurrent(0)
 
     const sid = newSessionId()
     const frames = buildFrames(payload, sid)
@@ -62,24 +65,12 @@ export function QRDisplay({ payload, title, caption, debug }: QRDisplayProps) {
     }
   }, [dataUrls])
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(payload)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch {
-      setCopied(false)
-    }
-  }
-
   const total = dataUrls.length
   const idx = total > 0 ? current + 1 : 0
   const dataUrl = total > 0 ? dataUrls[current] : null
 
   return (
-    <div className="qr-display">
-      <h2>{title}</h2>
-      <p className="hint">{caption}</p>
+    <>
       {error ? (
         <p className="error">{error}</p>
       ) : dataUrl ? (
@@ -103,6 +94,30 @@ export function QRDisplay({ payload, title, caption, debug }: QRDisplayProps) {
           </div>
         </div>
       ) : null}
+    </>
+  )
+}
+
+/** 確定 SDP のペイロードを複数 QR フレームに分割し、自動循環表示する（FR-15）。 */
+export function QRDisplay({ payload, title, caption, debug }: QRDisplayProps) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(payload)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="qr-display">
+      <h2>{title}</h2>
+      <p className="hint">{caption}</p>
+      {/* key={payload} で payload 変更時に作り直し、フレーム生成・表示 state を初期化する。 */}
+      <QRFrames key={payload} payload={payload} />
       {debug ? (
         <div className="debug-box" data-testid="debug-payload-box">
           <p className="debug-label">debug payload</p>
