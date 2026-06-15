@@ -25,6 +25,8 @@ export function QRScanner({ title, caption, onPayload, hint, debug }: QRScannerP
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [pasteValue, setPasteValue] = useState('')
   const [progress, setProgress] = useState<{ received: number; total: number } | null>(null)
+  // 受信済みフレーム番号（1 始まり）。どの番号を受信済みかをドット列で示す（案B）。
+  const [receivedIndices, setReceivedIndices] = useState<number[]>([])
 
   // フレームを自動収集するコレクタ。コンポーネントで 1 つだけ保持する。
   const collectorRef = useRef<FrameCollector | null>(null)
@@ -49,6 +51,7 @@ export function QRScanner({ title, caption, onPayload, hint, debug }: QRScannerP
         if (data && !completedRef.current) {
           collector.add(data)
           setProgress(collector.progress)
+          setReceivedIndices(collector.receivedIndices)
           if (collector.isComplete()) {
             const result = collector.result()
             if (result) {
@@ -123,6 +126,19 @@ export function QRScanner({ title, caption, onPayload, hint, debug }: QRScannerP
         <p className="hint" data-testid="scan-progress">
           {progress.received}/{progress.total} 読取済み
         </p>
+      ) : null}
+      {progress ? (
+        <div className="qr-frame-dots" data-testid="scan-frame-dots">
+          {Array.from({ length: progress.total }, (_, i) => (
+            <span
+              key={i}
+              className={
+                receivedIndices.includes(i + 1) ? 'qr-frame-dot active' : 'qr-frame-dot'
+              }
+              aria-hidden="true"
+            />
+          ))}
+        </div>
       ) : null}
       {cameraError ? <p className="hint">{cameraError}</p> : null}
       {hint ? <p className="error">{hint}</p> : null}

@@ -305,4 +305,42 @@ describe('FrameCollector', () => {
     expect(collector.isComplete()).toBe(false)
     expect(collector.result()).toBeNull()
   })
+
+  describe('receivedIndices', () => {
+    it('returns [] when nothing has been added', () => {
+      const collector = new FrameCollector()
+      expect(collector.receivedIndices).toEqual([])
+    })
+
+    it('returns received frame indices in ascending order', () => {
+      const collector = new FrameCollector()
+      collector.add(`${sid}.2.3.BB`)
+      expect(collector.receivedIndices).toEqual([2])
+      collector.add(`${sid}.1.3.AA`)
+      expect(collector.receivedIndices).toEqual([1, 2])
+    })
+
+    it('has no duplicates when the same idx is added repeatedly', () => {
+      const collector = new FrameCollector()
+      collector.add(`${sid}.1.3.AA`)
+      collector.add(`${sid}.1.3.AA`)
+      collector.add(`${sid}.1.3.AA`)
+      expect(collector.receivedIndices).toEqual([1])
+    })
+
+    it('reflects only the new sid after a session switch', () => {
+      const collector = new FrameCollector()
+      collector.add(`ab12.1.2.AA`)
+      expect(collector.receivedIndices).toEqual([1])
+      collector.add(`cd34.2.3.YY`)
+      expect(collector.receivedIndices).toEqual([2])
+    })
+
+    it('returns [] after reset', () => {
+      const collector = new FrameCollector()
+      collector.add(`${sid}.1.2.AA`)
+      collector.reset()
+      expect(collector.receivedIndices).toEqual([])
+    })
+  })
 })

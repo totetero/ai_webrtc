@@ -239,6 +239,14 @@ export class FrameCollector {
     this.bodies.set(parsed.idx, parsed.body)
   }
 
+  /**
+   * 受信済みフレーム番号（1 始まり）を昇順にソートした配列を返す。
+   * まだ何も受信していない / reset 後は空配列。内部状態は変更しない（純粋な導出）。
+   */
+  get receivedIndices(): number[] {
+    return Array.from(this.bodies.keys()).sort((a, b) => a - b)
+  }
+
   get progress(): { received: number; total: number } | null {
     if (this.sid === null) {
       return null
