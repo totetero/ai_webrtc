@@ -12,7 +12,11 @@ export default defineConfig({
   reporter: 'list',
   timeout: 60_000,
   use: {
-    baseURL: 'http://localhost:5173/ai_webrtc/',
+    // dev サーバは vite の basicSsl() で HTTPS 配信されるため https で揃える。
+    baseURL: 'https://localhost:5173/ai_webrtc/',
+    // 自己署名証明書を許容（basicSsl 由来）。これがないと webServer ヘルスチェックや
+    // ページ遷移が証明書エラーで失敗する。
+    ignoreHTTPSErrors: true,
     trace: 'off',
   },
   projects: [
@@ -31,7 +35,11 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1 --port 5173',
-    url: 'http://localhost:5173/ai_webrtc/',
+    url: 'https://localhost:5173/ai_webrtc/',
+    // webServer ヘルスチェックの url フェッチも自己署名証明書（basicSsl）を許容する。
+    // use.ignoreHTTPSErrors はブラウザ context 用で、ヘルスチェックの取得には効かないため
+    // webServer 側にも明示する（これがないと起動時に証明書エラーでタイムアウトする）。
+    ignoreHTTPSErrors: true,
     reuseExistingServer: true,
     // 初回ビルドを含むコールド起動を見込んで余裕を持たせる。
     timeout: 120_000,
