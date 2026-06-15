@@ -20,6 +20,9 @@ test-results
 playwright-report
 .playwright
 
+# Playwright MCP スクリーンショット（確認担当の証跡。gitには含めず VS Code で確認する）
+.screenshots/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

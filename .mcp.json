@@ -7,7 +7,10 @@
         "--headless",
         "--isolated",
         "--browser",
-        "chromium"
+        "chromium",
+        "--ignore-https-errors",
+        "--output-dir",
+        ".screenshots"
       ]
     }
   }

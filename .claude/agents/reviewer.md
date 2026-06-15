@@ -29,7 +29,12 @@ tools: Bash, Read, Glob, Grep, Skill, mcp__playwright__browser_navigate, mcp__pl
    - **Playwright を使ってブラウザ上の挙動を確認する**：
      - `mcp__playwright__browser_navigate` で起動した URL を開く。
      - `mcp__playwright__browser_snapshot` で画面状態を取得し、受け入れ条件に沿って操作（クリック・入力・フォーム送信など）する。
-     - 必要に応じて `mcp__playwright__browser_take_screenshot` で証跡を残し、`mcp__playwright__browser_console_messages` でエラーの有無を確認する。
+     - **各画面のスクリーンショットを必ず保存する**。保存先は**メインリポジトリ root の `.screenshots/pr-<PR番号>/` 配下**に PR ごとのフォルダで揃える（gitignore 済み・VS Code で確認可能）。手順は次のとおり：
+       1. **保存先フォルダを先に作る**（Bash）。メイン root は worktree 内からでも `MAIN_ROOT=$(dirname "$(git rev-parse --git-common-dir)")` で取得できる。`mkdir -p "$MAIN_ROOT/.screenshots/pr-<PR番号>"` を一度実行する。
+       2. `mcp__playwright__browser_take_screenshot` の `filename` に **絶対パス**で `"$MAIN_ROOT/.screenshots/pr-<PR番号>/<連番>-<画面名>.png"` を渡す（例: `/workspaces/ai_webrtc/.screenshots/pr-12/01-top.png`）。連番は撮影順、画面名は内容が分かる短い英字。
+       - **注意（重要）**: `filename` に**相対パスを渡してはいけない**。この版の Playwright MCP は相対 filename を MCP の output-dir ではなく cwd（リポジトリ root 直下）に保存するため、`.screenshots/` を外れて git 追跡対象を汚す。必ず上記の絶対パスを使う（フォルダ未作成だと書き込みエラーになるので 1. の mkdir を先に行う）。
+       - 受け入れ条件の各項目について、対応する画面・状態を最低1枚は撮る。重要な操作の前後（before/after）も撮ると差分が分かりやすい。
+     - `mcp__playwright__browser_console_messages` でエラーの有無を確認する。
    - 受け入れ条件を一項目ずつ検証し、合否を記録する。推測で合格にしない。実際に確認した結果のみを記録する。動作確認の補完として `verify` スキル、差分のバグ確認に `code-review` スキル（読み取り専用）を活用してよい。
    - 確認後は `mcp__playwright__browser_close` でブラウザを閉じる。
 
@@ -38,7 +43,7 @@ tools: Bash, Read, Glob, Grep, Skill, mcp__playwright__browser_navigate, mcp__pl
      - 受け入れ条件ごとの合否（✅ / ❌）
      - 確認した環境・手順
      - 発見した不具合・気になる点（再現手順つき）
-     - スクリーンショット等の証跡（取得した場合はその旨）
+     - スクリーンショット証跡の保存先（`.screenshots/pr-<PR番号>/` 配下に保存した旨と、撮影した画面の一覧）。画像は git に含まれずローカル限定なので、ファイル名と内容の対応が分かるように記す。
      - 総合判定（マージ可 / 要修正）
    - 重大な問題がある場合は、その旨を明確にコメントする。
 
